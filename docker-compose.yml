@@ -1,0 +1,28 @@
+version: "3"
+services:
+  https-portal:
+    image: steveltn/https-portal:1
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DOMAINS:  'www.todo411.com -> http://nextjs:3000, api.todo411.com -> http://django:8000'
+      STAGE: 'production'
+
+  nextjs:
+    build:
+      context: .
+      dockerfile: ./front/todoapp/Dockerfile
+    container_name: todoapp-front
+    command: yarn start
+
+  django:
+    build:
+      context: .
+      dockerfile: ./back/Dockerfile
+    container_name: todoapp-back
+    command: |
+      sh -c " python3 back/todo/manage.py migrate;
+        python3 back/todo/manage.py createcustomsuperuser --username 101485f1806d8c10df03996af6fe25cdb0d4b605 --email 101485f1806d8c10df03996af6fe25cdb0d4b605@root.com --password c420e0bdb15161780d7bb4b2f84ae0832d2c416b;
+        python3 back/todo/manage.py loaddata fixture_ProgressMaster.json;
+        gunicorn --bind :8000 --chdir back/todo todo.wsgi:application"
